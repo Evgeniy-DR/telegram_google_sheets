@@ -9,7 +9,7 @@ from functools import partial
 from user_message import authorization_messages, get_operator_greeting
 
 # Объявляем токен бота и создаем объект бота
-BOT_TOKEN = '7049713479:AAHGvr0WUFJL7wk65ZgnvMon-IU3juobS-I'
+BOT_TOKEN = ''
 bot = telebot.TeleBot(BOT_TOKEN)
 
 logger = telebot.logger
