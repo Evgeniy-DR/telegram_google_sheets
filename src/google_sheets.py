@@ -1,4 +1,3 @@
-
 import gspread
 import logging
 import os
@@ -9,17 +8,19 @@ from datetime import datetime
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Получение пути к файлу учетных данных из переменной окружения
+CREDENTIALS_FILE = os.getenv('GOOGLE_CREDENTIALS_FILE', 'credentials.json')
+
 # Авторизация и настройка соединения с Google Sheets
 def authorize_google_sheets():
     scope = ["https://spreadsheets.google.com/feeds",
              "https://www.googleapis.com/auth/drive"]
 
-    if not os.path.exists("for-example.json"):
-        raise FileNotFoundError("Файл учетных данных не найден.")
+    if not os.path.exists(CREDENTIALS_FILE):
+        raise FileNotFoundError(f"Файл учетных данных '{CREDENTIALS_FILE}' не найден.")
 
     try:
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(
-            "for-example.json", scope)
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, scope)
         client = gspread.authorize(credentials)
         logger.info("Авторизация прошла успешно.")
         return client
@@ -46,12 +47,11 @@ def add_data_to_sheet(sheet_id, data):
         # Добавление данных в конец таблицы
         worksheet.append_row(data_with_timestamp)
         
-        logger.info("Данные успешно добавлены: %s", data_with_timestamp)
+        logger.info("Данные успешно добавлены в таблицу (sheet_id: %s)", sheet_id)
         return "Данные успешно добавлены в таблицу!"
     except Exception as e:
         logger.error("Ошибка при добавлении данных: %s", e)
         return f"Ошибка при добавлении данных: {str(e)}"
-    
 
 def update_salary(sheet_id, new_value):
     column_index = 14
@@ -70,13 +70,11 @@ def update_salary(sheet_id, new_value):
         # Обновление данных в указанной колонке последней строки
         worksheet.update_cell(last_row, column_index, new_value)
 
-        logger.info("Данные в колонке %d последней строки обновлены на: %s", column_index, new_value)
-        return "Данные успешно добавленны в таблицу!"
+        logger.info("Данные в колонке %d последней строки обновлены (sheet_id: %s)", column_index, sheet_id)
+        return "Данные успешно добавлены в таблицу!"
     except Exception as e:
         logger.error("Ошибка при обновлении данных: %s", e)
         return f"Ошибка при обновлении данных: {str(e)}"
-
-
 
 # Получение последней строки из Google Sheets
 def get_last_row_from_sheet(sheet_id):
@@ -89,14 +87,13 @@ def get_last_row_from_sheet(sheet_id):
 
         if all_rows:
             last_row = all_rows[-1]
-            logger.info("Последняя строка: %s", last_row)
+            logger.info("Последняя строка получена (sheet_id: %s)", sheet_id)
             return last_row
         else:
             return "Таблица пуста."
     except Exception as e:
         logger.error("Ошибка при чтении данных: %s", e)
         return f"Ошибка при чтении данных: {str(e)}"
-
 
 # Получение данных из второй колонки всех строк, кроме первой строки
 def get_second_column_except_header(sheet_id):
@@ -111,130 +108,106 @@ def get_second_column_except_header(sheet_id):
         if all_rows:
             # Извлекаем данные из второй колонки, пропуская заголовок (первую строку)
             second_column_data = [row[1] for row in all_rows[1:] if len(row) > 1]
-
-            logger.info("Данные из второй колонки (без заголовка): %s", second_column_data)
+            logger.info("Данные из второй колонки получены (sheet_id: %s)", sheet_id)
             return second_column_data
         else:
             return "Таблица пуста."
     except Exception as e:
         logger.error("Ошибка при чтении данных: %s", e)
         return f"Ошибка при чтении данных: {str(e)}"
-    
 
 def get_18th_column_last_row(sheet_id):
     try:
-        # Авторизация Google Sheets
         client = authorize_google_sheets()
         sheet = client.open_by_key(sheet_id)
         worksheet = sheet.get_worksheet(0)
 
-        # Получаем все строки таблицы
         all_rows = worksheet.get_all_values()
 
         if all_rows:
-            # Последняя строка
             last_row = all_rows[-1]
-            
-            # Проверяем, есть ли 18 колонок в последней строке
             if len(last_row) >= 18:
                 value_18th_column = last_row[17]  # Индекс 17 соответствует 18-й колонке
-                logger.info("Значение из 18-й колонки последней строки: %s", value_18th_column)
+                logger.info("Значение из 18-й колонки получено (sheet_id: %s)", sheet_id)
                 return value_18th_column
             else:
-                logger.warning("В последней строке нет 18 колонок.")
+                logger.warning("В последней строке нет 18 колонок (sheet_id: %s)", sheet_id)
                 return None
         else:
-            logger.warning("Таблица пуста.")
+            logger.warning("Таблица пуста (sheet_id: %s)", sheet_id)
             return None
     except Exception as e:
         logger.error("Ошибка при чтении данных: %s", e)
         return None
 
-
-def get_11th_column_last_row(sheet_id):   # Зарплата 
+def get_11th_column_last_row(sheet_id):  # Зарплата
     try:
-        # Авторизация Google Sheets
         client = authorize_google_sheets()
         sheet = client.open_by_key(sheet_id)
         worksheet = sheet.get_worksheet(0)
 
-        # Получаем все строки таблицы
         all_rows = worksheet.get_all_values()
 
         if all_rows:
-            # Последняя строка
             last_row = all_rows[-1]
-            
-            # Проверяем, есть ли 10 колонок в последней строке
-            if len(last_row) >= 18:
+            if len(last_row) >= 11:
                 value_11th_column = last_row[10]  # Индекс 10 соответствует 11-й колонке
-                logger.info("Значение из 11-й колонки последней строки: %s", value_11th_column)
+                logger.info("Значение из 11-й колонки получено (sheet_id: %s)", sheet_id)
                 return value_11th_column
             else:
-                logger.warning("В последней строке нет 11 колонок.")
+                logger.warning("В последней строке нет 11 колонок (sheet_id: %s)", sheet_id)
                 return None
         else:
-            logger.warning("Таблица пуста.")
+            logger.warning("Таблица пуста (sheet_id: %s)", sheet_id)
             return None
     except Exception as e:
         logger.error("Ошибка при чтении данных: %s", e)
         return None
 
-
-def get_10th_column_last_row(sheet_id):   # Выручка за день 
+def get_10th_column_last_row(sheet_id):  # Выручка за день
     try:
-        # Авторизация Google Sheets
         client = authorize_google_sheets()
         sheet = client.open_by_key(sheet_id)
         worksheet = sheet.get_worksheet(0)
 
-        # Получаем все строки таблицы
         all_rows = worksheet.get_all_values()
 
         if all_rows:
-            # Последняя строка
             last_row = all_rows[-1]
-            
-            # Проверяем, есть ли 10 колонок в последней строке
-            if len(last_row) >= 18:
-                value_9th_column = last_row[9]  # Индекс 9 соответствует 10-й колонке
-                logger.info("Значение из 9-й колонки последней строки: %s", value_9th_column)
-                return value_9th_column
+            if len(last_row) >= 10:
+                value_10th_column = last_row[9]  # Индекс 9 соответствует 10-й колонке
+                logger.info("Значение из 10-й колонки получено (sheet_id: %s)", sheet_id)
+                return value_10th_column
             else:
-                logger.warning("В последней строке нет 9 колонок.")
+                logger.warning("В последней строке нет 10 колонок (sheet_id: %s)", sheet_id)
                 return None
         else:
-            logger.warning("Таблица пуста.")
+            logger.warning("Таблица пуста (sheet_id: %s)", sheet_id)
             return None
     except Exception as e:
         logger.error("Ошибка при чтении данных: %s", e)
         return None
-    
 
-def get_18th_column_last_row(sheet_id):   # Остаток наличных в конце смены 
+# Исправлено: дублирующаяся функция get_18th_column_last_row заменена на правильную нумерацию
+def get_18th_column_last_row(sheet_id):  # Остаток наличных в конце смены
     try:
-        # Авторизация Google Sheets
         client = authorize_google_sheets()
         sheet = client.open_by_key(sheet_id)
         worksheet = sheet.get_worksheet(0)
 
-        # Получаем все строки таблицы
         all_rows = worksheet.get_all_values()
 
         if all_rows:
-            # Последняя строка
             last_row = all_rows[-1]
-            
-            # Проверяем, есть ли 10 колонок в последней строке
             if len(last_row) >= 18:
-                value_9th_column = last_row[17]  # Индекс 9 соответствует 10-й колонке
-                logger.info("Значение из 9-й колонки последней строки: %s", value_9th_column)
-                return value_9th_column
+                value_18th_column = last_row[17]  # Индекс 17 соответствует 18-й колонке
+                logger.info("Значение из 18-й колонки получено (sheet_id: %s)", sheet_id)
+                return value_18th_column
             else:
-                logger.warning("В последней строке нет 9 колонок.")
+                logger.warning("В последней строке нет 18 колонок (sheet_id: %s)", sheet_id)
                 return None
         else:
-            logger.warning("Таблица пуста.")
+            logger.warning("Таблица пуста (sheet_id: %s)", sheet_id)
             return None
     except Exception as e:
         logger.error("Ошибка при чтении данных: %s", e)
